@@ -5,7 +5,10 @@ from rest_framework import status, viewsets
 from rest_framework.exceptions import ValidationError
 from account.serializers import UserSerializer
 from django.contrib.auth import authenticate
-
+from rest_framework.views import APIView
+from rest_framework.request import Request
+from django.contrib.auth import authenticate
+from rest_framework.authtoken.models import Token
 
 class UserViewset(viewsets.ModelViewSet):
     serializer_class = UserSerializer
@@ -43,6 +46,29 @@ class UserViewset(viewsets.ModelViewSet):
             return Response({'error': 'User not authenticated'}, status=status.HTTP_401_UNAUTHORIZED)
         
     
+class LoginView(APIView):  
+    permission_classes=[]
+
+    def post(self,request:Request):
+        email = request.data.get('email')
+        password = request.data.get('password')     
         
-            
-        
+        user =authenticate(email=email,password=password)
+
+        if user is not None:
+            response={
+                "messege":"Login Successful",
+                #"token":user.auth_token.key,
+            }
+            token,_ = Token.objects.get_or_create(user=user)
+           # return Response(data=response,{'Token':str(token)},status=status.HTTP_200_OK)
+            return Response({'status':True,'message':'User Login Successful','Token':str(token)}, status.HTTP_201_CREATED)
+        else:
+            return Response(data={'messege':"Invalid email or password" })
+
+    def get(self,request:Request):
+        content={
+            "user":str(request.user),
+            "auth":str(request.auth)
+        }   
+        return Response(data=content, status=status.HTTP_200_OK)
